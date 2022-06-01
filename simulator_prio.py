@@ -12,7 +12,7 @@ class Simulator:
         self.packet_arrival = [-1, -1]
         self.packet_process_end = -1
         self.action_type = None
-        self.queue = []
+        self.queue = [[],[]]
         self.packet_size = packet_size
 
     def get_rand_source_start_time(self, peak_rate):

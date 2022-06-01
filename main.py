@@ -5,7 +5,7 @@ def main():
     # simulator.start_mm1(1000, 7, 8)
     #
     # simulation_time, bit_rate, service_rate
-    simulator.start_fifo(3, 9000, 6000)
+    simulator.start_fifo(3, 4000, 6000)
 
 if __name__ == "__main__":
     main()
