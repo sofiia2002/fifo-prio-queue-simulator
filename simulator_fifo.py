@@ -1,6 +1,6 @@
 import numpy as np
 
-class Simulator:
+class SimulatorFifo:
     def __init__(self):
         self.prev_time = 0
         self.time = 0
@@ -76,8 +76,6 @@ class Simulator:
         #bit_rate -> [<source1>, <source2>], packet_size -> [<source1>, <source2>], service_rate -> value
         self.init_action_lists(bit_rate, packet_size, self.get_time_between_arrivals_cbr)
         while(self.time < simulation_time):
-            print(len(self.queue))
-            print(self.queue)
             self.update_clock()
             if (self.action_type == "A"):
                 self.action_a_algorithm(bit_rate, packet_size, service_rate, self.get_time_of_service_cbr, self.get_time_between_arrivals_cbr)
