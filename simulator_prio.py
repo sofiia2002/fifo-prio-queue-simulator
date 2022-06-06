@@ -16,6 +16,9 @@ class SimulatorPrio:
         self.queue_source = []
         self.queue = []
 
+        self.delay_single = []
+        self.time_wait_in_queue_single = []
+
     def get_rand_source_start_time(self, peak_rate, packet_size):
         #peak_rate -> number, packet_size -> number
         return np.random.rand() * packet_size/peak_rate
@@ -30,6 +33,19 @@ class SimulatorPrio:
     
     def init_action_lists(self, peak_rate, packet_size, get_time_between_arrivals):
         #peak_rate -> [<source1>, <source2>], packet_size -> [<source1>, <source2>], get_time_between_arrivals -> void
+        self.prev_time = 0
+        self.time = 0
+        self.server_status = 0
+        self.num_of_delay = 0
+        self.delay = 0
+        self.time_busy_server = 0
+        self.time_wait_in_queue = 0
+        self.packet_process_end = -1
+        self.action_type = None
+        self.queue_source = []
+        self.queue = []
+        self.delay_single = []
+        self.time_wait_in_queue_single = []
         self.packet_arrival[0] = self.time + get_time_between_arrivals(peak_rate[0], packet_size[0])
         self.packet_arrival[1] = self.time + self.get_rand_source_start_time(peak_rate[0], packet_size[0]) + get_time_between_arrivals(peak_rate[1], packet_size[1])
 
@@ -73,6 +89,7 @@ class SimulatorPrio:
         else:
             self.num_of_delay += 1
             self.delay = self.delay + (self.time - self.queue[0])
+            self.delay_single.append(self.time - self.queue[0])
             self.time_wait_in_queue += len(self.queue)*(self.time - self.prev_time)
             time_of_service =  get_time_of_service(service_rate, packet_size[self.queue_source[0]])
             self.packet_process_end = self.time + time_of_service
@@ -80,6 +97,8 @@ class SimulatorPrio:
             self.queue_source.pop(0)
     
     def update_clock(self):
+        self.time_wait_in_queue_single.append(len(self.queue))
+        # print(self.queue)
         self.prev_time = self.time
         smaller_time_index = int(self.packet_arrival[0] > self.packet_arrival[1])
         if (self.packet_arrival[smaller_time_index] < self.packet_process_end) or (self.packet_process_end == -1):
@@ -89,16 +108,26 @@ class SimulatorPrio:
             self.time = self.packet_process_end
             self.action_type = "D"
 
-    def start_fifo(self, simulation_time: int, bit_rate: list, packet_size: list, service_rate: int): 
+    def start_fifo(self, iter, simulation_time: int, bit_rate: list, packet_size: list, service_rate: int): 
         #bit_rate -> [<source1>, <source2>], packet_size -> [<source1>, <source2>], service_rate -> value
-        self.init_action_lists(bit_rate, packet_size, self.get_time_between_arrivals_cbr)
-        while(self.time < simulation_time):
-            self.update_clock()
-            if (self.action_type == "A"):
-                self.action_a_algorithm(bit_rate, packet_size, service_rate, self.get_time_of_service_cbr, self.get_time_between_arrivals_cbr)
-            elif (self.action_type == "D"):
-                self.action_d_algorithm(service_rate, packet_size, self.get_time_of_service_cbr)
-        print("number of packets: ", self.num_of_delay)
-        print("mean delay for client: ", self.delay/self.num_of_delay)
-        print("mean clients in queue: ", self.time_wait_in_queue/self.time)
-        print("server busy: ", self.time_busy_server/self.time)
+        delay = []
+        time_wait_in_queue = []
+        time = []
+        time_busy_server = []
+        for _ in range(iter):
+            self.init_action_lists(bit_rate, packet_size, self.get_time_between_arrivals_cbr)
+            while(self.time < simulation_time):
+                print(self.queue)
+                self.update_clock()
+                if (self.action_type == "A"):
+                    self.action_a_algorithm(bit_rate, packet_size, service_rate, self.get_time_of_service_cbr, self.get_time_between_arrivals_cbr)
+                elif (self.action_type == "D"):
+                    self.action_d_algorithm(service_rate, packet_size, self.get_time_of_service_cbr)
+            delay.append(self.delay_single)
+            time_wait_in_queue.append(self.time_wait_in_queue_single)
+            time.append(self.time)
+            time_busy_server.append(self.time_busy_server)
+            # print("mean delay for client: ", self.delay/self.num_of_delay)
+            # print("mean clients in queue: ", self.time_wait_in_queue/self.time)
+            # print("server busy: ", self.time_busy_server/self.time)
+        return delay, time_wait_in_queue, time, time_busy_server
